@@ -1,8 +1,8 @@
 import numpy as np;
 import cv2;
 
-# VIDEO = "Dados/Rua.mp4";
-VIDEO = "Dados/Arco.mp4";
+VIDEO = "Dados/Rua.mp4";
+# VIDEO = "Dados/Arco.mp4";
 
 capture = cv2.VideoCapture(VIDEO);
 hasFrame, frame = capture.read();
