@@ -10,20 +10,26 @@ import cv2;
 import sys;
 
 from dill.temp import capture
+from qtconsole.mainwindow import background
 from sympy.strategies.core import switch
 
 VIDEO = "Dados/Ponte.mp4";
 
 algoritmo = ['KNN', 'GMG', 'CNT', 'MOG', 'MOG2'];
-algoritmoSelecionado = algoritmo[3];
+algoritmoSelecionado = algoritmo[4];
 
+#KNN - 10.07 **
+#GMG - 26.2
+#CNT - 8.29 *
+#MOG - 15.64
+#MOG2 - 10.4 **
 
 def Substractor(algoritmoSelecionado):
     match algoritmoSelecionado:
         case 'KNN':
             return cv2.createBackgroundSubtractorKNN();
         case 'GMG':
-            return cv2.createBackgroundSubtractorGMG();
+            return cv2.bgsegm.createBackgroundSubtractorGMG();
         case 'CNT':
             return cv2.bgsegm.createBackgroundSubtractorCNT();
         case 'MOG':
@@ -35,8 +41,13 @@ def Substractor(algoritmoSelecionado):
 
 
 capture = cv2.VideoCapture(VIDEO);
-subtractor = Substractor(algoritmoSelecionado);
+# background_subtractor = Substractor(algoritmoSelecionado);
+# e1 = cv2.getTickCount();
 
+background_substractor = []
+for i, a in enumerate(algoritmo):
+    background_substractor.append(Substractor(a))
+    print(background_substractor[i])
 
 def main():
     while (capture.isOpened()):
@@ -46,14 +57,27 @@ def main():
             print("Fim dos Frames");
             break;
 
-        mask = subtractor.apply(frame);
 
-        frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
+        knn = background_substractor[0].apply(frame);
+        gmg = background_substractor[1].apply(frame);
+        cnt = background_substractor[2].apply(frame);
+        mog = background_substractor[3].apply(frame);
+        mog2 = background_substractor[4].apply(frame);
 
-        cv2.imshow("Frame", frame);
-        cv2.imshow("Mask", mask);
+        # frame_number += 1
+        frame = cv2.resize(frame, (0, 0), fx=0.35, fy=0.35)
+
+        cv2.imshow('Frame', frame);
+        cv2.imshow('KNN', knn);
+        cv2.imshow('GMG', gmg);
+        cv2.imshow('CNT', cnt);
+        cv2.imshow('MOG', mog);
+        cv2.imshow('MOG2', mog2);
 
         if cv2.waitKey(1) & 0xFF == ord('c'):
             break;
 
+        # e2 = cv2.getTickCount();
+        # time = (e2 - e1) / cv2.getTickFrequency();
+        # print(time);
 main();
