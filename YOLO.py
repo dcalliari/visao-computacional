@@ -1,10 +1,10 @@
 import cv2
-import numpy as np
-import sys
 
-from statsmodels.graphics.tukeyplot import results
+
 # conda install -c conda-forge ultralytics
 from ultralytics import YOLO
+
+
 VIDEO = "Dados/Ponte.mp4";
 capture = cv2.VideoCapture(VIDEO)
 
@@ -99,6 +99,7 @@ def is_congested(vehicle_positions, threshold):
 # Função principal - Aplica as mascaras e os filtros
 while True:
     hasFrame, frame = capture.read()
+
     if not hasFrame:
         break
 
