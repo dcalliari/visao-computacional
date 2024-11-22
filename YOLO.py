@@ -5,7 +5,7 @@ import cv2
 from ultralytics import YOLO
 
 
-VIDEO = "Dados/Ponte.mp4";
+VIDEO = "Dados/teste1.mp4"
 capture = cv2.VideoCapture(VIDEO)
 
 model = YOLO("yolo11n.pt")
@@ -18,13 +18,14 @@ offset = 2  # Offset para o retangulo - Margem de erro para pixel -> Maior offse
 linha_ROI = 620  # Linha de ROI - Posição da linha de contagem de carros -  a partir dessa linha ele irá contar os carros
 carros = 0
 
+
 # y,x,w,h -> Posição do carro dentro do video
 # Retorna o centro do carro ou objeto que deseja identificar
 # Ao passar na linha de ROI apenas centroide vai contar quando ele passar pela linha
 # A primeira parte da linha não vai contar pois ele não passou completamente
 # Gera controle maior de contagem
 def Centroide(x, y, w, h):
-    """"
+    """ "
     :param x: Posição x do carro
     :param y: Posição y do carro
     :param w: Largura do carro
@@ -37,6 +38,7 @@ def Centroide(x, y, w, h):
     cy = y + y1
     return cx, cy
 
+
 def processar_deteccoes(results, frame):
     """
     Processa as detecções do YOLO e retorna os centroides e o frame atualizado.
@@ -48,7 +50,9 @@ def processar_deteccoes(results, frame):
         for box in result.boxes:
             cls = int(box.cls)  # Classe do objeto detectado
             if cls in ALVO_CLASSES:  # Verifica se a classe é de interesse
-                x1, y1, x2, y2 = map(int, box.xyxy[0])  # Coordenadas da caixa delimitadora
+                x1, y1, x2, y2 = map(
+                    int, box.xyxy[0]
+                )  # Coordenadas da caixa delimitadora
                 w, h = x2 - x1, y2 - y1
                 cx, cy = Centroide(x1, y1, w, h)  # Calcula o centroide
                 detec.append((cx, cy))
@@ -61,7 +65,7 @@ def processar_deteccoes(results, frame):
 
 def set_info(detec):
     global carros
-    for (x, y) in detec:
+    for x, y in detec:
         # Se linha roi + offset for maior que y e y for maior que linha roi - offset
         if (linha_ROI + offset) > y > (linha_ROI - offset):
             carros += 1
@@ -76,13 +80,23 @@ def show_info(frame, mask, congestion_status):
     # Adiciona texto ao frame
     text = "Carros: " + str(carros)
     if congestion_status:
-        cv2.putText(frame, "Area congestionada", (450, 120), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 5)
+        cv2.putText(
+            frame,
+            "Area congestionada",
+            (250, 120),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            2,
+            (0, 0, 255),
+            5,
+        )
     else:
-        cv2.putText(frame, "Area livre", (450, 120), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 5)
+        cv2.putText(
+            frame, "Area livre", (450, 120), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 5
+        )
     # Adiciona texto ao frame
     cv2.putText(frame, text, (450, 70), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 5)
-    cv2.imshow('Frame', frame)
-    cv2.imshow('Detectar', mask)
+    cv2.imshow("Frame", frame)
+    cv2.imshow("Detectar", mask)
 
 
 # Função para verificar congestionamento
@@ -96,6 +110,7 @@ def is_congested(vehicle_positions, threshold):
     """
     return len(vehicle_positions) > threshold
 
+
 # Função principal - Aplica as mascaras e os filtros
 while True:
     hasFrame, frame = capture.read()
@@ -103,16 +118,62 @@ while True:
     if not hasFrame:
         break
 
+    frame = frame[:, :-450]
+
     results = model(frame)
 
     detec = processar_deteccoes(results, frame)
 
     # Verificar se a área está congestionada
-    congestion_status = is_congested(detec, threshold=20)
+    congestion_status = is_congested(detec, threshold=15)
 
     # Definir informações e mostrar na tela
     set_info(detec)
     show_info(frame, carros, congestion_status)
+
+    # Mostrar por um tempo o frame
+    if cv2.waitKey(1) == 27:  # ESC
+        break
+
+cv2.destroyAllWindows()
+capture.release()
+paused = False
+
+
+def toggle_pause(event, x, y, flags, param):
+    global paused
+    if event == cv2.EVENT_LBUTTONDOWN:
+        paused = not paused
+
+
+cv2.namedWindow("Frame")
+cv2.setMouseCallback("Frame", toggle_pause)
+
+frame_skip = 5  # Number of frames to skip
+frame_count = 0
+
+while True:
+    if not paused:
+        hasFrame, frame = capture.read()
+        if not hasFrame:
+            break
+
+        frame_count += 1
+        if frame_count % frame_skip != 0:
+            continue
+
+        frame = frame[:, :-450]
+
+        results = model(frame)
+
+        detec = processar_deteccoes(results, frame)
+
+        # Verificar se a área está congestionada
+        congestion_status = is_congested(detec, threshold=17)
+
+        # Definir informações e mostrar na tela
+        set_info(detec)
+        show_info(frame, carros, congestion_status)
 
     # Mostrar por um tempo o frame
     if cv2.waitKey(1) == 27:  # ESC
